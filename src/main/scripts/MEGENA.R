@@ -37,7 +37,7 @@ el <- calculate.PFN(ijw[,1:3])
 # output_path_suffix <- "_PFN.csv"
 # output_path <- paste0(tools::file_path_sans_ext(filepath), output_path_suffix)
 # write.csv(el, output_path)
-g <- graph.data.frame(el,directed = FALSE)
+g <- graph_from_data_frame(el,directed = FALSE)
 MEGENA.output <- do.MEGENA(g = g,remove.unsig = FALSE,doPar = FALSE,n.perm = 10,save.output=TRUE)
 output.summary <- MEGENA.ModuleSummary(MEGENA.output,
                                        mod.pvalue = 0.05,hub.pvalue = 0.05,
