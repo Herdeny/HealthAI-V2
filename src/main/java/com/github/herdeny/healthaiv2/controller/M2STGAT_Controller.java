@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,9 +37,12 @@ public class M2STGAT_Controller extends CommonController {
      * @return
      */
     @RequestMapping("/selectGene")
-    public Result<Map<String, Object>> selectGene(@RequestParam String fileName, String uid) {
+    public Result<Map<String, Object>> selectGene(@RequestParam String fileName, String uid,String num) {
         JSONObject result;
-        result = m2stgatService.selectGene(fileName, uid);
+        if (num == null) {
+            num = "1000";
+        }
+        result = m2stgatService.selectGene(fileName, uid, num);
         return Result.success(result.toMap());
     }
 

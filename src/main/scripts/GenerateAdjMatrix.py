@@ -2,10 +2,12 @@ import pandas as pd
 import sys
 from tqdm import tqdm
 
-# data_path = sys.argv[1]
-# file_name = sys.argv[2]
-data_path = "D:/ACM/HealthAIV2/data/"
-file_name = "Data_Correlation-M24.txt"
+from src.main.scripts.SelectGene import saving_path
+
+data_path = sys.argv[1]
+file_name = sys.argv[2]
+# data_path = "D:/ACM/HealthAIV2/data/"
+# file_name = "Data_Correlation-M24.txt"
 print("Loading data...", flush=True)
 df = pd.read_csv(data_path + file_name, sep="\t", index_col=None)
 print("Data loaded.", flush=True)
@@ -31,5 +33,6 @@ except Exception as e:
 print("Adjacency matrix built.", flush=True)
 # 可选：将邻接矩阵保存到CSV文件
 print("Saving data...", flush=True)
-adj_matrix.to_csv(data_path + file_name + "_adj_matrix.csv")
-print("Data saved.", flush=True)
+saving_path = data_path + file_name[:-4] + "_adj_matrix.csv"
+adj_matrix.to_csv(saving_path)
+print(f"Data saved to {saving_path}", flush=True)

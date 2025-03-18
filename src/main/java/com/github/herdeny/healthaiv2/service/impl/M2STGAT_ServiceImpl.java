@@ -33,10 +33,10 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
     private SseClient sseClient;
 
     @Override
-    public JSONObject selectGene(String fileName, String uid) {
+    public JSONObject selectGene(String fileName, String uid, String num) {
         JSONObject result = new JSONObject();
         boolean flag = true;
-        String[] args = new String[]{PYTHON_PATH, SELECT_GENE_PATH, DATA_PATH, fileName};
+        String[] args = new String[]{PYTHON_PATH, SELECT_GENE_PATH, DATA_PATH, fileName, num};
         System.out.println("Start Select Gene...");
         sseClient.sendMessage(uid, uid + "-start-select-gene", "Start select gene...");
         try {
