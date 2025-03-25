@@ -1,8 +1,6 @@
-import pandas as pd
 import sys
-from tqdm import tqdm
 
-from src.main.scripts.SelectGene import saving_path
+import pandas as pd
 
 data_path = sys.argv[1]
 file_name = sys.argv[2]
