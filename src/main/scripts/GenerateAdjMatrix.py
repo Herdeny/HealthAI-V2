@@ -4,8 +4,6 @@ import pandas as pd
 
 data_path = sys.argv[1]
 file_name = sys.argv[2]
-# data_path = "D:/ACM/HealthAIV2/data/"
-# file_name = "Data_Correlation-M24.txt"
 print("Loading data...", flush=True)
 df = pd.read_csv(data_path + file_name, sep="\t", index_col=None)
 print("Data loaded.", flush=True)
