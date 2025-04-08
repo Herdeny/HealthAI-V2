@@ -8,4 +8,6 @@ public interface M2STGAT_Service {
     JSONObject generateAdjMatrix(String fileName, String uid);
 
     JSONObject generateGeneMap(String fileName, String uid);
+
+    JSONObject ModuleCluster(String fileName, String uid);
 }

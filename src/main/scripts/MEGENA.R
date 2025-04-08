@@ -20,8 +20,8 @@ module.pval=0.05
 hub.pval=0.05
 
 
-cor.perm = 2 
-hub.perm = 20 
+cor.perm = 2
+hub.perm = 20
 
 annot.table=NULL
 id.col=1

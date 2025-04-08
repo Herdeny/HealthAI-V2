@@ -31,13 +31,15 @@ public class M2STGAT_Controller extends CommonController {
 
     /**
      * 挑选基因
-     * 调用用户上传的 csv 文件进行基因挑选，生成的文件名为 filename_1000.csv
+     * 调用用户上传的 csv 文件进行基因挑选，生成的文件名为 **`{fileName}_{num}.csv`**
+     * **`{fileName}`**、**`{num}`** 与请求的参数值相同，如示例参数会生成`PPMI-data_M6_600.csv`
+     *
      * @param fileName 上传的文件名
-     * @param uid 用于指定SSE发送端口
+     * @param uid      用于指定SSE发送端口
      * @return
      */
     @RequestMapping("/selectGene")
-    public Result<Map<String, Object>> selectGene(@RequestParam String fileName, String uid,String num) {
+    public Result<Map<String, Object>> selectGene(@RequestParam String fileName, String uid, String num) {
         JSONObject result;
         if (num == null) {
             num = "1000";
@@ -48,7 +50,9 @@ public class M2STGAT_Controller extends CommonController {
 
     /**
      * 生成基因图谱
-     * @param fileName 用于生成基因图谱的文件名，通常为 上传文件名_1000.csv
+     * 利用挑选过后的基因文件生成基因图谱
+     *
+     * @param fileName 用于生成基因图谱的文件名，通常为 `{fileName}_{num}.csv`
      * @return
      */
     @RequestMapping("/createGeneMap")
@@ -59,8 +63,24 @@ public class M2STGAT_Controller extends CommonController {
     }
 
     /**
+     * 模块聚类
+     * 将PFN文件进行聚类，此接口必须在调用`/createGeneMap`接口后才能使用
+     * 生成的文件名为`{fileName}_{num}_PFN_modules.csv`
+     * 利用获取文件接口获取该文件进行绘图，第四行`module`列为模块编号
+     * @param fileName PFN文件名，通常为 `{fileName}_{num}_PFN.csv`
+     * @return
+     */
+    @RequestMapping("/moduleCluster")
+    public Result<Map<String, Object>> moduleCluster(@RequestParam String fileName, String uid) {
+        JSONObject result;
+        result = m2stgatService.ModuleCluster(fileName, uid);
+        return Result.success(result.toMap());
+    }
+
+    /**
      * 邻接矩阵转化
-     * @param fileName 用于生成邻接矩阵的文件名，通常为 上传文件名_1000.csv
+     *
+     * @param fileName 用于生成邻接矩阵的文件名，通常为 `{fileName}_{num}.csv`
      * @return
      */
     @RequestMapping("/createAdjMatrix")
@@ -70,8 +90,9 @@ public class M2STGAT_Controller extends CommonController {
         return Result.success(result.toMap());
     }
 
+
     /**
-     * 获取PFN邻接表
+     * 获取文件
      *
      * @param response HttpServletResponse
      * @return

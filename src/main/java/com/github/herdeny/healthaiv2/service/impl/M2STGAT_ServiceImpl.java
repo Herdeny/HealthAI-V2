@@ -28,6 +28,8 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
     private String GENERATE_ADJ_MATRIX_PATH;
     @Value("${MEGENA_PATH}")
     private String MEGENA_PATH;
+    @Value("${MODULE_CLUSTER_PATH}")
+    private String MODULE_CLUSTER_PATH;
 
     @Autowired
     private SseClient sseClient;
@@ -204,6 +206,58 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
         if (flag) {
             System.out.println("Complete Generate GeneMap");
             sseClient.sendMessage(uid, uid + "-end-create-geneMap", "Complete Generate GeneMap");
+            result.put("code", 0);
+        }
+        return result;
+    }
+
+    @Override
+    public JSONObject ModuleCluster(String fileName, String uid) {
+        JSONObject result = new JSONObject();
+        boolean flag = true;
+        String[] args = new String[]{PYTHON_PATH, MODULE_CLUSTER_PATH, DATA_PATH, fileName};
+        System.out.println("Start Cluster Module...");
+        sseClient.sendMessage(uid, uid + "-start-cluster-module", "Start Cluster Module...");
+        try {
+            Process process = Runtime.getRuntime().exec(args);
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+            BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+
+            // Read the output
+            String actionStr;
+            while ((actionStr = in.readLine()) != null) {
+                System.out.println(actionStr);
+                String messageID = uid + "-" + UUID.randomUUID();
+                sseClient.sendMessage(uid, messageID, actionStr);
+            }
+
+            String errorStr;
+            while ((errorStr = err.readLine()) != null) {
+                if (errorStr.contains("error:") || errorStr.contains("Errno")) {
+                    if (flag) flag = false;
+                    String regex = "\\[(Errno|WinError)\\s+(\\d+)]";
+                    Pattern pattern = Pattern.compile(regex);
+                    Matcher matcher = pattern.matcher(errorStr);
+                    if (matcher.find()) {
+                        result.put("code", matcher.group(2));
+                    }
+                    result.put("data", errorStr.substring(!errorStr.contains("error:") ? 0 : errorStr.indexOf("error:") + 7));
+                    sseClient.sendMessage(uid, uid + "-error-cluster-module", "cluster module error");
+                }
+                System.err.println(errorStr);
+            }
+            in.close();
+            err.close();
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        result.put("success", flag);
+        if (flag) {
+            System.out.println("Complete Cluster Module");
+            sseClient.sendMessage(uid, uid + "-end-cluster-module", "Complete Cluster Module");
             result.put("code", 0);
         }
         return result;
