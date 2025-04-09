@@ -129,7 +129,7 @@ def main(module_file, pfn_file, output_file):
     # 保存网络信息
     save_network_info(G, output_file)
 
-    print(f"Cluster results has been saved to {output_file}")
+    print(f"MPath:{output_file}")
     print(f"Total edges: {G.number_of_edges()}")
     print(f"Total genes: {G.number_of_nodes()}")
 
@@ -139,7 +139,7 @@ def main(module_file, pfn_file, output_file):
         for module_id, color in module_colors.items():
             f.write(f"{module_id}\t{color}\n")
 
-    print(f"The module color mapping has been saved to {output_file}.module_colors.txt")
+    print(f"CPath:{output_file}.module_colors.txt")
 
 
 if __name__ == "__main__":

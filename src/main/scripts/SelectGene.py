@@ -40,4 +40,4 @@ print("Expression matrix of highly variable genes extracted.", flush=True)
 print("Saving data...", flush=True)
 saving_path = data_path + file_name[:-4] + f"_{select_num}.csv"
 data_M6.to_csv(saving_path)
-print(f"Data saved to {saving_path}.", flush=True)
+print(f"DPath:{saving_path}", flush=True)

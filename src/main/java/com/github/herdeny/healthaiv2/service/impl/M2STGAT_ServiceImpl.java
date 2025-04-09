@@ -37,6 +37,7 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
     @Override
     public JSONObject selectGene(String fileName, String uid, String num) {
         JSONObject result = new JSONObject();
+        JSONObject info = new JSONObject();
         boolean flag = true;
         String[] args = new String[]{PYTHON_PATH, SELECT_GENE_PATH, DATA_PATH, fileName, num};
         System.out.println("Start Select Gene...");
@@ -49,6 +50,10 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
             // Read the output
             String actionStr;
             while ((actionStr = in.readLine()) != null) {
+                if (actionStr.startsWith("DPath:")) {
+                    info.put("DataPath", actionStr.substring(actionStr.indexOf(":") + 1).trim());
+                    info.put("GeneNum", num);
+                }
                 System.out.println(actionStr);
                 String messageID = uid + "-" + UUID.randomUUID();
                 sseClient.sendMessage(uid, messageID, actionStr);
@@ -77,6 +82,8 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
             throw new RuntimeException(e);
         }
         result.put("success", flag);
+        if (!info.isEmpty())
+            result.put("SelectGeneInfo", info);
         if (flag) {
             sseClient.sendMessage(uid, uid + "-end-select-gene", "Complete select gene...");
             result.put("code", 0);
@@ -87,6 +94,7 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
     @Override
     public JSONObject generateAdjMatrix(String fileName, String uid) {
         JSONObject result = new JSONObject();
+        JSONObject info = new JSONObject();
         AtomicBoolean flag = new AtomicBoolean(true);
         String[] args = new String[]{PYTHON_PATH, GENERATE_ADJ_MATRIX_PATH, DATA_PATH, fileName};
         System.out.println("Start generate matrix...");
@@ -101,6 +109,9 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
                 try {
                     String line;
                     while ((line = in.readLine()) != null) {
+                        if (line.startsWith("DPath:")) {
+                            info.put("DataPath", line.substring(line.indexOf(":") + 1).trim());
+                        }
                         System.out.println(line);
                         // 将每一行的输出发送给 SSE
                         String messageID = uid + "-" + UUID.randomUUID();
@@ -148,6 +159,9 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
             process.waitFor();
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
+        }
+        if (!info.isEmpty()){
+            result.put("AdjMatrixInfo", info);
         }
         result.put("success", flag.get());
         if (flag.get()) {
@@ -214,6 +228,7 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
     @Override
     public JSONObject ModuleCluster(String fileName, String uid) {
         JSONObject result = new JSONObject();
+        JSONObject info = new JSONObject();
         boolean flag = true;
         String[] args = new String[]{PYTHON_PATH, MODULE_CLUSTER_PATH, DATA_PATH, fileName};
         System.out.println("Start Cluster Module...");
@@ -227,9 +242,22 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
             // Read the output
             String actionStr;
             while ((actionStr = in.readLine()) != null) {
-                System.out.println(actionStr);
-                String messageID = uid + "-" + UUID.randomUUID();
-                sseClient.sendMessage(uid, messageID, actionStr);
+                if (actionStr.startsWith("CPath:")) {
+                    //获取文件路径
+                    String CPath = actionStr.substring(actionStr.indexOf(":") + 1).trim();
+                    info.put("ColorMappingPath", CPath);
+                } else if (actionStr.startsWith("MPath:")) {
+                    //获取文件路径
+                    String MPath = actionStr.substring(actionStr.indexOf(":") + 1).trim();
+                    info.put("ModuleClusterPath", MPath);
+                } else {
+                    if (actionStr.startsWith("Total edges:") || actionStr.startsWith("Total genes:")) {
+                        info.put(actionStr.split(":")[0], actionStr.split(":")[1].trim());
+                    }
+                    System.out.println(actionStr);
+                    String messageID = uid + "-" + UUID.randomUUID();
+                    sseClient.sendMessage(uid, messageID, actionStr);
+                }
             }
 
             String errorStr;
@@ -255,6 +283,8 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
         }
 
         result.put("success", flag);
+        if (!info.isEmpty())
+            result.put("ClusterInfo", info);
         if (flag) {
             System.out.println("Complete Cluster Module");
             sseClient.sendMessage(uid, uid + "-end-cluster-module", "Complete Cluster Module");

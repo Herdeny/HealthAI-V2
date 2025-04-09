@@ -1,7 +1,9 @@
 import sys
 
 import pandas as pd
+import warnings
 
+warnings.simplefilter(action='ignore', category=FutureWarning)
 data_path = sys.argv[1]
 file_name = sys.argv[2]
 print("Loading data...", flush=True)
@@ -31,4 +33,4 @@ print("Adjacency matrix built.", flush=True)
 print("Saving data...", flush=True)
 saving_path = data_path + file_name[:-4] + "_adj_matrix.csv"
 adj_matrix.to_csv(saving_path)
-print(f"Data saved to {saving_path}", flush=True)
+print(f"DPath:{saving_path}", flush=True)
