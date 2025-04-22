@@ -67,6 +67,7 @@ public class M2STGAT_Controller extends CommonController {
      * 将PFN文件进行聚类，此接口必须在调用`/createGeneMap`接口后才能使用
      * 生成的文件名为`{fileName}_{num}_PFN_modules.csv`
      * 利用获取文件接口获取该文件进行绘图，第四行`module`列为模块编号
+     *
      * @param fileName PFN文件名，通常为 `{fileName}_{num}_PFN.csv`
      * @return
      */
@@ -79,17 +80,44 @@ public class M2STGAT_Controller extends CommonController {
 
     /**
      * 邻接矩阵转化
-     *
+     * 需要在参数内声明是什么时期（M12、M24、M36），以便于后续预测
      * @param fileName 用于生成邻接矩阵的文件名，通常为 `{fileName}_{num}.csv`
+     * @param type 声明是什么时期（M12、M24、M36），以便于后续预测
      * @return
      */
     @RequestMapping("/createAdjMatrix")
-    public Result<Map<String, Object>> adjacencyMatrixConversion(@RequestParam String fileName, String uid) {
+    public Result<Map<String, Object>> adjacencyMatrixConversion(@RequestParam String fileName,@RequestParam String type,String uid) {
         JSONObject result;
-        result = m2stgatService.generateAdjMatrix(fileName, uid);
+        result = m2stgatService.generateAdjMatrix(fileName,type,uid);
         return Result.success(result.toMap());
     }
 
+    /**
+     * 调用模型预测
+     * 调用模型进行预测，需要M12、M24、M36三个时期的基因节点数据（挑选后）和邻接矩阵数据
+     * 这意味着必须分别对M12、M24、M36基因文件调用`/createGeneMap`和`/createAdjMatrix`接口后才能使用
+     *
+     * @param M12GeneFileName      M12基因文件名
+     * @param M24GeneFileName      M24基因文件名
+     * @param M36GeneFileName      M36基因文件名
+     * @param M12AdjMatrixFileName M12邻接矩阵文件名
+     * @param M24AdjMatrixFileName M24邻接矩阵文件名
+     * @param M36AdjMatrixFileName M36邻接矩阵文件名
+     * @return
+     */
+    @RequestMapping("/predict")
+    public Result<Map<String, Object>> adjacencyMatrixConversion(@RequestParam String M12GeneFileName,
+                                                                 @RequestParam String M24GeneFileName,
+                                                                 @RequestParam String M36GeneFileName,
+                                                                 @RequestParam String M12AdjMatrixFileName,
+                                                                 @RequestParam String M24AdjMatrixFileName,
+                                                                 @RequestParam String M36AdjMatrixFileName,
+                                                                 String uid) {
+        JSONObject result;
+        result = m2stgatService.predict(M12GeneFileName, M12AdjMatrixFileName,
+                M24GeneFileName, M24AdjMatrixFileName, M36GeneFileName, M36AdjMatrixFileName, uid);
+        return Result.success(result.toMap());
+    }
 
     /**
      * 获取文件
