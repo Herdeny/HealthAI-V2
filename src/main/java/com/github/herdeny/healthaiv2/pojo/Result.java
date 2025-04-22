@@ -13,11 +13,11 @@ public class Result<T> {
     private T data;//响应数据
 
     public static <E> Result<E> success(E data) {
-        return new Result<>(0, "success", data);
+        return new Result<>(0, "Successful Request", data);
     }
 
     public static <E> Result<E> success() {
-        return new Result<>(0, "success", null);
+        return new Result<>(0, "Successful Request", null);
     }
 
     public static <E> Result<E> error(String msg) {

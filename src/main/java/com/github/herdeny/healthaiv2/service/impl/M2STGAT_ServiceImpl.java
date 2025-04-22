@@ -1,6 +1,7 @@
 package com.github.herdeny.healthaiv2.service.impl;
 
 import com.github.herdeny.healthaiv2.service.M2STGAT_Service;
+import com.github.herdeny.healthaiv2.utils.PredictionParser;
 import com.github.herdeny.healthaiv2.utils.SseClient;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
@@ -22,6 +24,8 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
     private String PYTHON_PATH;
     @Value("${DATA_PATH}")
     private String DATA_PATH;
+    @Value("${MODEL_PATH}")
+    private String MODEL_PATH;
     @Value("${SELECT_GENE_PATH}")
     private String SELECT_GENE_PATH;
     @Value("${GENERATE_ADJ_MATRIX_PATH}")
@@ -30,6 +34,8 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
     private String MEGENA_PATH;
     @Value("${MODULE_CLUSTER_PATH}")
     private String MODULE_CLUSTER_PATH;
+    @Value("${PREDICT_PATH}")
+    private String PREDICT_PATH;
 
     @Autowired
     private SseClient sseClient;
@@ -92,11 +98,11 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
     }
 
     @Override
-    public JSONObject generateAdjMatrix(String fileName, String uid) {
+    public JSONObject generateAdjMatrix(String fileName, String type, String uid) {
         JSONObject result = new JSONObject();
         JSONObject info = new JSONObject();
         AtomicBoolean flag = new AtomicBoolean(true);
-        String[] args = new String[]{PYTHON_PATH, GENERATE_ADJ_MATRIX_PATH, DATA_PATH, fileName};
+        String[] args = new String[]{PYTHON_PATH, GENERATE_ADJ_MATRIX_PATH, DATA_PATH, fileName, type};
         System.out.println("Start generate matrix...");
         sseClient.sendMessage(uid, uid + "-start-generate-matrix", "Start generate matrix...");
         try {
@@ -160,7 +166,7 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
-        if (!info.isEmpty()){
+        if (!info.isEmpty()) {
             result.put("AdjMatrixInfo", info);
         }
         result.put("success", flag.get());
@@ -288,6 +294,83 @@ public class M2STGAT_ServiceImpl implements M2STGAT_Service {
         if (flag) {
             System.out.println("Complete Cluster Module");
             sseClient.sendMessage(uid, uid + "-end-cluster-module", "Complete Cluster Module");
+            result.put("code", 0);
+        }
+        return result;
+    }
+
+    @Override
+    public JSONObject predict(String m12GeneFileName, String m12AdjMatrixFileName, String m24GeneFileName, String m24AdjMatrixFileName, String m36GeneFileName, String m36AdjMatrixFileName, String uid) {
+        JSONObject result = new JSONObject();
+        JSONObject info = new JSONObject();
+        JSONObject prediction;
+        boolean flag = true;
+        String[] args = new String[]{PYTHON_PATH, PREDICT_PATH, DATA_PATH, MODEL_PATH, m12GeneFileName, m12AdjMatrixFileName, m24GeneFileName, m24AdjMatrixFileName, m36GeneFileName, m36AdjMatrixFileName};
+        System.out.println("Start Predicting...");
+        sseClient.sendMessage(uid, uid + "-start-predicting", "Start Predicting...");
+        try {
+            Process process = Runtime.getRuntime().exec(args);
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+            BufferedReader err = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+
+            // Read the output
+            String actionStr;
+            while ((actionStr = in.readLine()) != null) {
+                if (actionStr.startsWith("PATH1:")) {
+                    //获取文件路径
+                    String CPath = actionStr.substring(actionStr.indexOf(":") + 1).trim();
+                    info.put("PredictResultPath", CPath);
+                } else if (actionStr.startsWith("PATH2:")) {
+                    //获取文件路径
+                    String MPath = actionStr.substring(actionStr.indexOf(":") + 1).trim();
+                    info.put("PredictProbabilityPath", MPath);
+                } else if (actionStr.startsWith("Prediction distribution")) {
+                    PredictionParser predictionParser = new PredictionParser();
+                    Map<String, Integer> predictionMap = predictionParser.PredictionParser(actionStr);
+                    prediction = new JSONObject(predictionMap);
+                    info.put("ResultDistribution", prediction);
+                    System.out.println(actionStr);
+                    String messageID = uid + "-" + UUID.randomUUID();
+                    sseClient.sendMessage(uid, messageID, actionStr);
+                } else {
+                    if (actionStr.startsWith("Result:")) {
+                        info.put(actionStr.split(":")[0], actionStr.split(":")[1].trim());
+                    }
+                    System.out.println(actionStr);
+                    String messageID = uid + "-" + UUID.randomUUID();
+                    sseClient.sendMessage(uid, messageID, actionStr);
+                }
+            }
+
+            String errorStr;
+            while ((errorStr = err.readLine()) != null) {
+                if (errorStr.contains("error:") || errorStr.contains("Errno") || errorStr.contains("Error")) {
+                    if (flag) flag = false;
+                    String regex = "\\[(Errno|WinError)\\s+(\\d+)]";
+                    Pattern pattern = Pattern.compile(regex);
+                    Matcher matcher = pattern.matcher(errorStr);
+                    if (matcher.find()) {
+                        result.put("code", matcher.group(2));
+                    }
+                    result.put("data", errorStr.substring(!errorStr.contains("error:") ? 0 : errorStr.indexOf("error:") + 7));
+                    sseClient.sendMessage(uid, uid + "-error-predicting", "Prediction error");
+                }
+                System.err.println(errorStr);
+            }
+            in.close();
+            err.close();
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        result.put("success", flag);
+        if (!info.isEmpty())
+            result.put("PredictInfo", info);
+        if (flag) {
+            System.out.println("Complete Predicting");
+            sseClient.sendMessage(uid, uid + "-end-prediction", "Complete Prediction");
             result.put("code", 0);
         }
         return result;

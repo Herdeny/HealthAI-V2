@@ -6,6 +6,7 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 data_path = sys.argv[1]
 file_name = sys.argv[2]
+file_type = sys.argv[3]
 print("Loading data...", flush=True)
 df = pd.read_csv(data_path + file_name, sep="\t", index_col=None)
 print("Data loaded.", flush=True)
@@ -31,6 +32,6 @@ except Exception as e:
 print("Adjacency matrix built.", flush=True)
 # 可选：将邻接矩阵保存到CSV文件
 print("Saving data...", flush=True)
-saving_path = data_path + file_name[:-4] + "_adj_matrix.csv"
+saving_path = data_path + f"{file_type}_AdjMatrix.csv"
 adj_matrix.to_csv(saving_path)
 print(f"DPath:{saving_path}", flush=True)
